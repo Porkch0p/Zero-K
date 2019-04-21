@@ -106,7 +106,7 @@ local TEXT_CORRECT_Y = 1.25
 local MINIMAP_DRAW_SIZE = math.max(mapX,mapZ) * 0.0145
 
 options_path = 'Settings/Interface/Map/Metal Spots'
-options_order = { 'drawicons', 'size', 'rounding'}
+options_order = { 'drawicons', 'size', 'rounding', 'conmetal', 'hideonstart'}
 options = {
 
 	drawicons = {
@@ -139,6 +139,22 @@ options = {
 		update_on_the_fly = true,
 		advanced = true,
 		tooltip_format = "%.0f", -- show 1 instead of 1.0 (confusion)
+		OnChange = function() updateMexDrawList() end
+	},
+	conmetal = {
+		name = "Only Show for Constructors",
+		desc = "Enabled: Show detailed income when Constructor selected\nDisabled: Always show detailed income. This may reduce performance.",
+		type = 'bool',
+		value = false,
+		noHotkey = true,
+		OnChange = function() updateMexDrawList() end
+	},
+	hideonstart = {
+		name = "Hide Detailed Income After Starting",
+		desc = "Enabled: Only show metal locations after game begins \nDisabled: Show detailed income after game begins",
+		type = 'bool',
+		value = false,
+		noHotkey = true,
 		OnChange = function() updateMexDrawList() end
 	},
 }
@@ -191,6 +207,9 @@ local metalSpotsNil = true
 
 local metalmult = tonumber(Spring.GetModOptions().metalmult) or 1
 local metalmultInv = metalmult > 0 and (1/metalmult) or 1
+
+local wasSelectionCount = 0 	-- cache selections for large armies
+local wasSelectionBuilder = false
 
 ------------------------------------------------------------
 -- Functions
@@ -702,14 +721,41 @@ function calcMinimapMexDrawList()
 	glColor(1,1,1,1)
 end
 
+-- TODO : Performance is good but would be better using Spring.GetSelectedUnitsCounts
+local function isBuilderSelected()
+
+	local selUnits = spGetSelectedUnits()
+	local unitCount = #selUnits
+
+	if wasSelectionCount > 1 and wasSelectionCount == unitCount then
+		return wasSelectionBuilder
+	end
+
+	for i=1,#selUnits do
+		local unitID = selUnits[i]
+		local unitDefID = spGetUnitDefID(unitID)
+		if UnitDefs[unitDefID].isBuilder then
+			wasSelectionCount = unitCount
+			wasSelectionBuilder = true
+			return wasSelectionBuilder
+		end
+	end
+
+	wasSelectionCount = unitCount
+	wasSelectionBuilder = false
+	return wasSelectionBuilder
+end
+
 local function DrawIncomeLabels()
 	glTexture("LuaUI/Images/ibeam.png")
 	glDepthTest(false)
 	glColor(1,1,1)
 
+	local preGameStarted = spGetGameFrame() < 1
 	local cx, cy, cz = Spring.GetCameraDirection()
 	local dir = ((math.atan2(cx, cz) / math.pi) + 1) * 180
 
+	-- apply textures
 	for i = 1, #WG.metalSpots do
 		local spot = WG.metalSpots[i]
 		local x,z = spot.x, spot.z
@@ -721,18 +767,24 @@ local function DrawIncomeLabels()
 		glRotate(90,1,0,0)
 		glRotate(-dir, 0, 0, 1)
 
-		if options.drawicons.value then
-			local metal = spot.metal
-			local size = options.size.value
-			if metal >= 100 then
-				size = size * 7
-				metal = 1 -- capped so that the icons dont outgrow the map if somebody puts insane values
-			elseif metal >= 10 then
-				size = size * 3
-				metal = metal / 10
+
+		if (not options.hideonstart.value or preGameStarted) and options.drawicons.value then
+			if not options.conmetal.value or isBuilderSelected() or preGameStarted then
+				local metal = spot.metal
+				local size = options.size.value
+				if metal >= 100 then
+					size = size * 7
+					metal = 1 -- capped so that the icons dont outgrow the map if somebody puts insane values
+				elseif metal >= 10 then
+					size = size * 3
+					metal = metal / 10
+				end
+				local width = metal*size
+				glTexRect(-width/2, 40, width/2, 40+size,0,0,metal,1)
+			else
+				-- Draws a metal bar at the center of the metal spot when constructor not selected
+				glTexRect(-25, -25, 25, 25,0,0,1,1)
 			end
-			local width = metal*size
-			glTexRect(-width/2, 40, width/2, 40+size,0,0,metal,1)
 		else
 			-- Draws a metal bar at the center of the metal spot
 			glTexRect(-25, -25, 25, 25,0,0,1,1)
@@ -742,7 +794,8 @@ local function DrawIncomeLabels()
 	end
 	glTexture(false)
 
-	if not options.drawicons.value then
+	-- apply text
+	if (not options.hideonstart.value or preGameStarted) and not options.drawicons.value then
 		for i = 1, #WG.metalSpots do
 			local spot = WG.metalSpots[i]
 			local x,z = spot.x, spot.z
@@ -757,11 +810,13 @@ local function DrawIncomeLabels()
 			glRotate(-90, 1, 0, 0)
 			glRotate(dir, 0, 0, 1)
 			glTranslate(0, -40 - options.size.value, 0)
-			glText("+" .. ("%."..options.rounding.value.."f"):format(metal), 0.0, 0.0, options.size.value , "cno")
-
+			if not options.conmetal.value or isBuilderSelected() or preGameStarted then
+				glText("+" .. ("%."..options.rounding.value.."f"):format(metal), 0.0, 0.0, options.size.value , "cno")
+			end
 			glPopMatrix()
 		end
 	end
+	
 end
 
 function updateMexDrawList()
