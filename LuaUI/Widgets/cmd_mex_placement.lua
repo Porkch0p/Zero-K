@@ -208,8 +208,7 @@ local metalSpotsNil = true
 local metalmult = tonumber(Spring.GetModOptions().metalmult) or 1
 local metalmultInv = metalmult > 0 and (1/metalmult) or 1
 
-local wasSelectionCount = 0 	-- cache selections for large armies
-local wasSelectionBuilder = false
+local hasBuilder = false
 
 ------------------------------------------------------------
 -- Functions
@@ -721,31 +720,6 @@ function calcMinimapMexDrawList()
 	glColor(1,1,1,1)
 end
 
--- TODO : Performance is good but would be better using Spring.GetSelectedUnitsCounts
-local function isBuilderSelected()
-
-	local selUnits = spGetSelectedUnits()
-	local unitCount = #selUnits
-
-	if wasSelectionCount > 1 and wasSelectionCount == unitCount then
-		return wasSelectionBuilder
-	end
-
-	for i=1,#selUnits do
-		local unitID = selUnits[i]
-		local unitDefID = spGetUnitDefID(unitID)
-		if UnitDefs[unitDefID].isBuilder then
-			wasSelectionCount = unitCount
-			wasSelectionBuilder = true
-			return wasSelectionBuilder
-		end
-	end
-
-	wasSelectionCount = unitCount
-	wasSelectionBuilder = false
-	return wasSelectionBuilder
-end
-
 local function DrawIncomeLabels()
 	glTexture("LuaUI/Images/ibeam.png")
 	glDepthTest(false)
@@ -769,7 +743,7 @@ local function DrawIncomeLabels()
 
 
 		if (not options.hideonstart.value or preGameStarted) and options.drawicons.value then
-			if not options.conmetal.value or isBuilderSelected() or preGameStarted then
+			if not options.conmetal.value or hasBuilder or preGameStarted then
 				local metal = spot.metal
 				local size = options.size.value
 				if metal >= 100 then
@@ -810,13 +784,28 @@ local function DrawIncomeLabels()
 			glRotate(-90, 1, 0, 0)
 			glRotate(dir, 0, 0, 1)
 			glTranslate(0, -40 - options.size.value, 0)
-			if not options.conmetal.value or isBuilderSelected() or preGameStarted then
+			if not options.conmetal.value or hasBuilder or preGameStarted then
 				glText("+" .. ("%."..options.rounding.value.."f"):format(metal), 0.0, 0.0, options.size.value , "cno")
 			end
 			glPopMatrix()
 		end
 	end
 	
+end
+
+--TODO: Hide labels on non-standard builders
+function widget:SelectionChanged(units)
+	if units then
+		for i=1,#units do
+			local unitID = units[i]
+			local unitDefID = spGetUnitDefID(unitID)
+			if UnitDefs[unitDefID].isBuilder then
+				hasBuilder = true
+				return
+			end
+		end
+	end
+	hasBuilder = false  
 end
 
 function updateMexDrawList()
