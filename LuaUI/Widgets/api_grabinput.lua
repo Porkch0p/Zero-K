@@ -66,7 +66,7 @@ options = {
 		name = "Pausing disables lock",
 		tooltip = "Disables input grabbing when the game is paused.",
 		type = "bool",
-		value = true,
+		value = false,
 		noHotkey = false,
 		OnChange = function (self)
 			if self.value and (options.grabinput.value and "1") then		
