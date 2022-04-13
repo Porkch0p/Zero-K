@@ -1150,11 +1150,13 @@ function gadget:GameFrame(n)
 		end
 		
 		if data.miniQueenNum <= #miniQueenTime and (t >= (miniQueenTime[data.miniQueenNum]*data.queenTime)) then
-			_G.chickenEventArgs = {type="miniQueen"}
-			SendToUnsynced("ChickenEvent")
-			_G.chickenEventArgs = nil
-			for i=1,playerCount do
-				SpawnMiniQueen()
+			if n > 30 then -- modoption for 'no dragons' needs time multiplier to be zero
+				_G.chickenEventArgs = {type="miniQueen"}
+				SendToUnsynced("ChickenEvent")
+				_G.chickenEventArgs = nil
+				for i=1,playerCount do
+					SpawnMiniQueen()
+				end
 			end
 			data.miniQueenNum = data.miniQueenNum + 1
 		end
