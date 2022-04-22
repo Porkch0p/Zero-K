@@ -629,10 +629,8 @@ function widget:GameFrame(n)
 	--	cmdRateS= 0
 	--end
 	
-	if n%2 == 0 then
-		UpdateTransportedUnits()
-	end
-	
+	UpdateTransportedUnits()
+
 	-- estimate for recently launched units
 	if queueTrajectoryEstimate[n] then
 		for unitID,_ in pairs(queueTrajectoryEstimate[n]) do
@@ -830,7 +828,14 @@ function EstimateCrashLocation(victimID, transportID)
 	local radius = spGetUnitRadius(victimID)
 	local mass = UnitDefs[defID].mass
 	local airDensity = 1.2/4 --see Spring/rts/Map/Mapinfo.cpp
-	local future_locationX, future_height,future_locationZ = SimulateWithDrag(xVel,yVel,zVel, x,y,z, gravity ,mass,radius, airDensity)
+	local future_locationX, future_height,future_locationZ 
+
+	if transportID then
+		future_locationX, future_height,future_locationZ  = SimulateWithoutDrag(xVel,yVel,zVel, x,y,z, gravity)
+	else
+		future_locationX, future_height,future_locationZ  = SimulateWithDrag(xVel,yVel,zVel, x,y,z, gravity ,mass,radius, airDensity)
+	end
+
 	if future_locationX then
 		victimLandingLocation[victimID] = {future_locationX, future_height, future_locationZ}
 	end
@@ -874,8 +879,8 @@ function SimulateWithoutDrag(xVel,yVel,zVel, x,y,z,gravity)
 	local hitGround=false
 	local reachApex = false
 	local iterationSoFar=1
-	local step =5 --how much gameframe to skip (set how much gameframe does 1 iteration will represent)
-	local maximumIteration = 360 --1 iteration crudely simulate 5 frame (skip 4 frame), therefore 360 iteration is roughly 2 minute simulation into future
+	local step =1 --how much gameframe to skip (set how much gameframe does 1 iteration will represent)
+	local maximumIteration = 1800 --1 iteration crudely simulate 5 frame (skip 4 frame), therefore 360 iteration is roughly 2 minute simulation into future
 	local future_locationX, future_locationZ, future_height= 0,0,0
 	while (not hitGround and iterationSoFar < maximumIteration) do --not hit ground yet?
 		local future_time = iterationSoFar*step
