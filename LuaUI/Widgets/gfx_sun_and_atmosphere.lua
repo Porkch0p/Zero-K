@@ -470,6 +470,10 @@ function widget:Update()
 	updates = updates + 1
 	if updates == 4 or updates == 28 then
 		LoadSunAndFogSettings()
+		-- Increase base ambient unit lighting with shadows disabled
+		if Spring.GetConfigInt("Shadows") == 0 then
+			Spring.SetSunLighting({unitAmbientColor = {1.0, 1.0, 1.0, 1.0}})
+		end
 		if updates == 28 then
 			widgetHandler:RemoveCallIn("Update")
 		end
