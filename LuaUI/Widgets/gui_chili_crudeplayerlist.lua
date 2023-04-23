@@ -491,6 +491,16 @@ local function Compare(ac, bc)
 		return a.isAiTeam
 	end
 	
+	if options.rankSort.value then
+		if a.playerID ~= b.playerID then
+			local a_ext = string.find(a.rank, "[.]")
+			local b_ext = string.find(b.rank, "[.]")
+			-- LUAUI/Images/LobbyRanks/6_7.png -> 7_6 for sort value
+			local a_rank = string.reverse(string.sub(a.rank, a_ext-3, a_ext-1))
+			local b_rank = string.reverse(string.sub(b.rank, b_ext-3, b_ext-1))
+			return b_rank > a_rank
+		end
+	end
 	if a.teamID ~= b.teamID then
 		return a.teamID > b.teamID
 	end
@@ -627,7 +637,7 @@ end
 --------------------------------------------------------------------------------
 
 options_path = 'Settings/HUD Panels/Player List'
-options_order = {'text_height', 'backgroundOpacity', 'alignToTop'}
+options_order = {'text_height', 'backgroundOpacity', 'alignToTop', 'rankSort'}
 options = {
 	text_height = {
 		name = 'Font Size (10-18)',
@@ -653,6 +663,14 @@ options = {
 		value = false,
 		desc = "Align list entries to top (i.e. don't push to bottom)",
 		OnChange = SortEntries,
+	},
+	rankSort = {
+		name = "Sort teams by ranking",
+		type = 'bool',
+		value = false,
+		desc = "Re-order list by color and player level",
+		OnChange = SortEntries,
+		noHotkey = true,
 	},
 }
 
