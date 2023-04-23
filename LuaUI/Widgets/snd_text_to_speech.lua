@@ -42,7 +42,7 @@ local function SetupTTS(value)
 end
 
 options_path = 'Settings/Audio'
-options_order = {'tts_vol'}
+options_order = {'tts_vol', 'tts_filter'}
 options = {
 	tts_vol = {
 		name = "Text-to-speech volume",
@@ -54,6 +54,13 @@ options = {
 		OnChange = function(self)
 			SetupTTS(self.value)
 		end,
+	},
+	tts_filter = {
+		name = "Filter Text-to-speech",
+		desc = "TTS skips commander selection",
+		type = 'bool',
+		value = true,
+		noHotkey = true,
 	},
 }
 
@@ -92,6 +99,10 @@ function widget:AddConsoleMessage(msg)
 		return
 	end
 	if not (msg and msg.msgtype == "player_to_allies" and msg.playername ~= myPlayerName) then
+		return
+	end
+	comselect = "I choose:"
+	if options.tts_filter.value and msg and msg.argument:sub(1, #comselect) == comselect then
 		return
 	end
 	Spring.SendLuaMenuMsg("textToSpeechSay_" .. (msg.playername or "unknown") .. " " .. (msg.argument or ""))
