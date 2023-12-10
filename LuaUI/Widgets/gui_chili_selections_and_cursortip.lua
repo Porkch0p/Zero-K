@@ -934,7 +934,7 @@ local function GetExtraBuildTooltipAndHealthOverride(unitDefID, mousePlaceX, mou
 	return extraText .. "\n" .. WG.Translate("interface", "od_payback") .. ": " ..  WG.Translate("interface", "unknown"), healthOverride, minWind
 end
 
-local function GetPlayerCaption(teamID)
+local function GetPlayerCaption(teamID, nameLimit)
 	local _, player,_,isAI = Spring.GetTeamInfo(teamID, false)
 	local playerName
 	if isAI then
@@ -947,6 +947,9 @@ local function GetPlayerCaption(teamID)
 		end
 	end
 	local teamColor = Chili.color2incolor(Spring.GetTeamColor(teamID))
+	if nameLimit and nameLimit > 0 and string.len(playerName) > nameLimit then
+		playerName = string.sub(playerName, 0, nameLimit)
+	end
 	return WG.Translate("interface", "player") .. ': ' .. teamColor .. playerName
 end
 
@@ -1646,6 +1649,12 @@ local function GetSelectionStatsDisplay(parentControl)
 		if burstClass and total_totalburst ~= 0 then
 			unitInfoString = unitInfoString ..
 				WG.Translate("interface", "burst_damage") .. ": " .. ((unreliableBurst and "~") or "") .. Format(total_totalburst) .. "\n"
+		end
+		if total_count == 1 then
+			local teamID = Spring.GetUnitTeam(unitID)
+			if teamID then
+				unitInfoString = unitInfoString .. Format(GetPlayerCaption(teamID, 13)) .. "\n"
+			end
 		end
 		
 		statLabel:SetCaption(unitInfoString)
