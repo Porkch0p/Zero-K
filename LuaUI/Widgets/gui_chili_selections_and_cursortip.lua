@@ -947,10 +947,11 @@ local function GetPlayerCaption(teamID, nameLimit)
 		end
 	end
 	local teamColor = Chili.color2incolor(Spring.GetTeamColor(teamID))
+	local endColor = "\008"
 	if nameLimit and nameLimit > 0 and string.len(playerName) > nameLimit then
 		playerName = string.sub(playerName, 0, nameLimit)
 	end
-	return WG.Translate("interface", "player") .. ': ' .. teamColor .. playerName
+	return WG.Translate("interface", "player") .. ': ' .. teamColor .. playerName .. endColor
 end
 
 local function GetIsHoldingDrawKey()
